@@ -1,0 +1,54 @@
+{
+  "current_stage": "GENERATE_HYPOTHESIS",
+  "evidence_used": [
+    "baseline-e2e@sha256:1111111111111111111111111111111111111111111111111111111111111111",
+    "old-mapping-experiment@sha256:2222222222222222222222222222222222222222222222222222222222222222",
+    "old-mapping-kernel-timing@sha256:3333333333333333333333333333333333333333333333333333333333333333",
+    "baseline-kernel-timing@sha256:4444444444444444444444444444444444444444444444444444444444444444",
+    "rocm-capabilities@sha256:5555555555555555555555555555555555555555555555555555555555555555",
+    "q4rdna-runtime-controls@sha256:6666666666666666666666666666666666666666666666666666666666666666"
+  ],
+  "conclusion": "The preserved old mapping substantially reduced decode throughput while comparable Level-2 traces attribute most of the loss to longer aggregate q4rdna GEMV dispatch duration. The same binary exposes an isolated split-K wave32 alternative by unsetting LLAMA_Q4_RDNA_MAPPING, so a runtime-only candidate experiment is justified without further profiling.",
+  "confidence": 0.93,
+  "missing_evidence": [
+    "split-K candidate performance has not been measured",
+    "split-K candidate quality has not been measured",
+    "kernel metadata is unsupported",
+    "targeted counters and telemetry are not integrated, so the underlying hardware behavior remains unknown"
+  ],
+  "requested_profile_level": null,
+  "execution_map_updates": [],
+  "bottleneck_assessment": null,
+  "limit_estimate": null,
+  "hypothesis": {
+    "id": "q4rdna-split-k-wave32-runtime-mapping",
+    "observed_evidence_ids": [
+      "baseline-e2e@sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "old-mapping-experiment@sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "old-mapping-kernel-timing@sha256:3333333333333333333333333333333333333333333333333333333333333333",
+      "baseline-kernel-timing@sha256:4444444444444444444444444444444444444444444444444444444444444444",
+      "q4rdna-runtime-controls@sha256:6666666666666666666666666666666666666666666666666666666666666666"
+    ],
+    "interpretation": "Selecting the old Q4_RDNA mapping is causally associated with the measured throughput regression: tg128/tg512 fell from 96.2/96.0 tok/s to 60.8/61.1 tok/s, and comparable timing traces show that increased aggregate q4rdna quantized GEMV duration accounts for most of that loss. Hardware-level causes cannot be classified from timing-only evidence, but choosing the alternative mapping directly tests whether mapping selection controls the regression.",
+    "proposed_change": "Keep LLAMA_Q4_RDNA_SIDECAR=/models/qwen3-8b.q4rdna and the identical prepared binary, but unset LLAMA_Q4_RDNA_MAPPING so the runtime selects the split-K wave32 mapping. Make no source or build changes.",
+    "expected_performance_signature": "Relative to the preserved old-mapping experiment, aggregate duration of the dominant q4rdna quantized GEMV dispatches should decrease, with corresponding increases at both tg128 and tg512. Recovery toward the hash-bound baseline is plausible but not assumed.",
+    "expected_e2e_effect": "Materially improve decode throughput over the approximately 61 tok/s old-mapping result at both benchmark coordinates while preserving stability and exact binary/protocol comparability; whether it matches or exceeds the approximately 96 tok/s baseline must be measured.",
+    "risks": [
+      "The split-K wave32 mapping may not reduce end-to-end time despite improving the dominant dispatches.",
+      "The candidate may fail stability or deterministic performance eligibility at one benchmark coordinate.",
+      "The sidecar or mapping may alter correctness or quality, requiring validation after performance eligibility.",
+      "An inherited LLAMA_Q4_RDNA_MAPPING value could invalidate isolation unless explicitly unset."
+    ],
+    "required_validation": [
+      "Reuse binary_sha256=9999999999999999999999999999999999999999999999999999999999999999 and protocol_sha256=abababababababababababababababababababababababababababababababab exactly.",
+      "Run the canonical fresh unprofiled llama-bench coordinates tg128 and tg512 with three samples per coordinate and the required stability checks.",
+      "Record LLAMA_Q4_RDNA_SIDECAR=/models/qwen3-8b.q4rdna and explicitly unset LLAMA_Q4_RDNA_MAPPING for every candidate run.",
+      "Apply the deterministic performance pre-gate before any expensive quality evaluation.",
+      "If performance-eligible, run the required correctness and quality evaluation and preserve its raw and normalized outputs.",
+      "If performance fails, preserve the negative experiment; obtain a comparable Level-2 timing trace only if needed to explain its measured signature."
+    ],
+    "stop_condition": "Stop this hypothesis if the candidate fails comparability or stability, fails the deterministic performance pre-gate at either required coordinate, or, after performance eligibility, fails required correctness or quality validation; do not vary additional runtime or source variables within the same experiment."
+  },
+  "proposed_experiment": null,
+  "proposed_next_stage": "CREATE_EXPERIMENT"
+}

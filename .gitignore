@@ -1,0 +1,25 @@
+.venv*/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+dist/
+build/
+/.gpuopt*/
+/.gpuopt-*.lock
+/.qwen35-work/
+/artifacts/
+/tmp/
+/work/
+/live-decisions/
+runs/
+worktrees/
+
+# Local credentials and machine-specific configuration.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+id_rsa
+id_ed25519

@@ -1,0 +1,104 @@
+{
+  "schema_version": 1,
+  "id": "q4-rdna-live",
+  "model": {
+    "path": "/workspace/math-rule-loop/models/qwen3-8b-q4/Qwen3-8B-Q4_K_M.gguf",
+    "sha256": "77aa55af4ee7d18a44d31eb2aadd2b6e9bf754b5ea3bed43d10101263ea48d10",
+    "architecture": "qwen",
+    "quantization": "Q4_K_M",
+    "sidecar_path": "/workspace/math-rule-loop/artifacts/q4rdna-phase2/qwen3-8b.q4rdna",
+    "sidecar_sha256": "68f086c9d4992f317d3737ccfd50e24da275420766531d6f47e414068f23e7b8"
+  },
+  "runtime": {
+    "name": "llama.cpp",
+    "repo_path": "/workspace/amd-inference-optimization/.gpuopt-runtime/q4-rdna-live/source",
+    "base_commit": "a7a6d0d269c896218b6c78e0933bd6a17519d3f6",
+    "build_flags": [
+      "-DCMAKE_BUILD_TYPE=Release",
+      "-DGGML_HIP=ON",
+      "-DGGML_HIP_GRAPHS=ON",
+      "-DGGML_HIP_MMQ_MFMA=ON",
+      "-DGGML_HIP_NO_VMM=ON",
+      "-DAMDGPU_TARGETS=gfx1201"
+    ],
+    "build_dir": "/workspace/amd-inference-optimization/.gpuopt-runtime/q4-rdna-live/build",
+    "prepared_binary_path": "/workspace/amd-inference-optimization/.gpuopt-runtime/q4-rdna-live/build/bin/llama-bench",
+    "prepared_binary_sha256": "b3fbcd9151ea98b1420aaaae5d3e77a413f80acf449257d7d4fb2f5c9d2f35c2",
+    "source_snapshot_sha256": "02ac94bd3a00661a2f4ddf6c7c71c96573196942fdc832c4c75d087eba781457",
+    "backend": "hip"
+  },
+  "gpu": {"gfx_target": "gfx1201", "device_id": 0, "name": "AMD Radeon RX 9070 XT"},
+  "rocm": {"version": "7.14.0"},
+  "workload": {
+    "kind": "single_request_decode",
+    "prompt_tokens": 0,
+    "generation_tokens": 128,
+    "batch_size": 1,
+    "concurrency": 1,
+    "seed": 42
+  },
+  "benchmark": {
+    "warmup_runs": 1,
+    "sample_count": 3,
+    "timeout_seconds": 600,
+    "benchmark_command": [
+      "/workspace/amd-inference-optimization/.gpuopt-runtime/q4-rdna-live/build/bin/llama-bench",
+      "-m", "/workspace/math-rule-loop/models/qwen3-8b-q4/Qwen3-8B-Q4_K_M.gguf",
+      "-p", "0", "-n", "128,512", "-b", "2048", "-ub", "512", "-t", "12",
+      "-r", "3", "-ngl", "999", "-mg", "0", "-dev", "ROCm0", "-o", "json", "-oe", "none"
+    ],
+    "extra_args": [],
+    "required_metrics": ["tokens_per_second_tg128", "tokens_per_second_tg512"]
+  },
+  "objective": {
+    "primary_metric": "tokens_per_second",
+    "minimum_improvement_percent": 10.0,
+    "maximize": true,
+    "metric_requirements": [
+      {"metric": "tokens_per_second_tg128", "minimum_improvement_percent": 10.0, "maximize": true},
+      {"metric": "tokens_per_second_tg512", "minimum_improvement_percent": 10.0, "maximize": true}
+    ]
+  },
+  "quality": {
+    "require_correctness": true,
+    "require_quality_evaluation": true,
+    "max_ppl_regression_percent": 1.5,
+    "max_accuracy_drop_percentage_points": 2.0,
+    "accuracy_metric": "math_accuracy"
+  },
+  "environment": {
+    "required_match_fields": ["gpu_gfx", "gpu_device", "rocm_version", "runtime_base_commit", "model_sha256", "build_flags_hash"],
+    "max_sample_cv_percent": 2.0,
+    "require_stable_telemetry": false,
+    "require_fresh_capture": true,
+    "require_run_identity": true,
+    "required_run_match_fields": [
+      "protocol_hash", "binary_sha256", "source_snapshot_sha256",
+      "model_sha256", "runtime_libraries_hash"
+    ]
+  },
+  "budgets": {
+    "max_experiments": 4,
+    "max_gpu_minutes": 120.0,
+    "build_timeout_seconds": 1800,
+    "max_profile_level": "LEVEL_3"
+  },
+  "mcp": {
+    "command": ["/workspace/rocm-issue-agent/.venv/bin/rocm-agent-mcp"],
+    "env": {"ROCM_AGENT_HOME": "/home/USER/.rocm-agent"},
+    "cwd": "/workspace/rocm-issue-agent",
+    "timeout_seconds": 900
+  },
+  "metadata": {
+    "live_q4rdna": "true",
+    "prepared_source_path": "/workspace/amd-inference-optimization/.gpuopt-runtime/q4-rdna-live/source",
+    "prepared_runtime_manifest": "/workspace/amd-inference-optimization/.gpuopt-runtime/q4-rdna-live/preparation.json",
+    "frozen_patch_sha256": "02ac94bd3a00661a2f4ddf6c7c71c96573196942fdc832c4c75d087eba781457",
+    "minimum_free_disk_gib": "30",
+    "benchmark_generation_tokens": "[128,512]",
+    "benchmark_extra_args": "[]",
+    "rocm_library_path": "/opt/rocm/core-7.14/lib:/opt/rocm/lib",
+    "math_rule_loop_dir": "/workspace/math-rule-loop",
+    "hf_model_path": "/workspace/math-rule-loop/models/qwen3-8b-hf"
+  }
+}

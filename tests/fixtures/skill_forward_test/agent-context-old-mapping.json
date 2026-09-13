@@ -1,0 +1,121 @@
+{
+  "schema_version": 1,
+  "task_id": "q4rdna-skill-forward-test",
+  "current_stage": "GENERATE_HYPOTHESIS",
+  "permitted_next_stages": [
+    "CREATE_EXPERIMENT",
+    "DISCOVER_HOTSPOTS"
+  ],
+  "evidence": [
+    {
+      "id": "baseline-e2e@sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "kind": "benchmark_result",
+      "summary": "Fresh unprofiled llama-bench baseline: tg128=96.2 tok/s and tg512=96.0 tok/s, three samples per coordinate, CV below 2%. Canonical binary_sha256=9999999999999999999999999999999999999999999999999999999999999999; protocol_sha256=abababababababababababababababababababababababababababababababab.",
+      "artifact": {
+        "path": "evidence/0007-baseline-e2e.json",
+        "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+        "size": 1842,
+        "producer": "llama_cpp_adapter",
+        "media_type": "application/json",
+        "created_at": "2026-08-16T14:00:00Z"
+      },
+      "source": "live"
+    },
+    {
+      "id": "old-mapping-experiment@sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "kind": "experiment_result",
+      "summary": "Preserved experiment q4rdna-old-mapping used runtime-only env LLAMA_Q4_RDNA_SIDECAR=/models/qwen3-8b.q4rdna and LLAMA_Q4_RDNA_MAPPING=old. It reused binary_sha256=9999999999999999999999999999999999999999999999999999999999999999 and protocol_sha256=abababababababababababababababababababababababababababababababab. Fresh unprofiled results were tg128=60.8 tok/s and tg512=61.1 tok/s with CV below 2%. The framework performance pre-gate recorded REJECT; quality was intentionally not run.",
+      "artifact": {
+        "path": "experiments/q4rdna-old-mapping/result.json",
+        "sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+        "size": 2601,
+        "producer": "experiment_runner",
+        "media_type": "application/json",
+        "created_at": "2026-08-16T15:00:00Z"
+      },
+      "source": "live"
+    },
+    {
+      "id": "old-mapping-kernel-timing@sha256:3333333333333333333333333333333333333333333333333333333333333333",
+      "kind": "kernel_timing_trace",
+      "summary": "Approved Level-2 trace of the preserved old-mapping experiment. Decode is dominated by q4rdna quantized GEMV dispatches; their aggregate duration increased strongly relative to the hash-bound baseline timing trace and accounts for most of the throughput loss. Dispatch timing and names are present. Hardware counters, kernel metadata, telemetry, occupancy, load-wait, bandwidth, and cache metrics are absent and must not be inferred from this trace.",
+      "artifact": {
+        "path": "evidence/0014-old-mapping-kernel-timing.json",
+        "sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+        "size": 58123,
+        "producer": "rocm_issue_agent_mcp",
+        "media_type": "application/json",
+        "created_at": "2026-08-16T15:15:00Z"
+      },
+      "source": "live"
+    },
+    {
+      "id": "baseline-kernel-timing@sha256:4444444444444444444444444444444444444444444444444444444444444444",
+      "kind": "kernel_timing_trace",
+      "summary": "Approved Level-2 timing trace for the exact baseline binary and protocol. It supplies dispatch names, counts, and durations only. It is comparable to the old-mapping Level-2 trace by binary, model, device, and protocol identity.",
+      "artifact": {
+        "path": "evidence/0009-baseline-kernel-timing.json",
+        "sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+        "size": 49352,
+        "producer": "rocm_issue_agent_mcp",
+        "media_type": "application/json",
+        "created_at": "2026-08-16T14:15:00Z"
+      },
+      "source": "live"
+    },
+    {
+      "id": "rocm-capabilities@sha256:5555555555555555555555555555555555555555555555555555555555555555",
+      "kind": "rocm_observation_capabilities",
+      "summary": "gfx1201 live capability result: Level-2 kernel timing/trace is integrated and usable. Kernel metadata is unsupported. Targeted PMC counters, telemetry, PC sampling, and thread trace may be detected in parts of the host stack but are not integrated through this MCP workflow; they are unavailable to this task. A Level-3 request cannot currently produce the missing evidence.",
+      "artifact": {
+        "path": "evidence/0002-rocm-capabilities.json",
+        "sha256": "5555555555555555555555555555555555555555555555555555555555555555",
+        "size": 2260,
+        "producer": "rocm_issue_agent_mcp",
+        "media_type": "application/json",
+        "created_at": "2026-08-16T13:45:00Z"
+      },
+      "source": "live"
+    },
+    {
+      "id": "q4rdna-runtime-controls@sha256:6666666666666666666666666666666666666666666666666666666666666666",
+      "kind": "runtime_source_inspection",
+      "summary": "The already-built Q4_RDNA implementation exposes two mutually exclusive runtime mappings in the same binary. LLAMA_Q4_RDNA_MAPPING=old selects the failed old mapping. Removing LLAMA_Q4_RDNA_MAPPING while keeping the identical sidecar selects the split-K wave32 mapping. No source or build change is required; this is a one-variable runtime-configuration experiment.",
+      "artifact": {
+        "path": "evidence/0016-q4rdna-runtime-controls.json",
+        "sha256": "6666666666666666666666666666666666666666666666666666666666666666",
+        "size": 1012,
+        "producer": "target_inspector",
+        "media_type": "application/json",
+        "created_at": "2026-08-16T15:20:00Z"
+      },
+      "source": "live"
+    }
+  ],
+  "missing_evidence": [
+    "split-K candidate performance has not been measured",
+    "split-K candidate quality has not been measured",
+    "kernel metadata is unsupported",
+    "targeted counters and telemetry are not integrated and remain unknown"
+  ],
+  "experiment_count": 1,
+  "experiment_budget": 3,
+  "decision_schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "current_stage",
+      "evidence_used",
+      "conclusion",
+      "confidence",
+      "missing_evidence",
+      "requested_profile_level",
+      "execution_map_updates",
+      "bottleneck_assessment",
+      "limit_estimate",
+      "hypothesis",
+      "proposed_experiment",
+      "proposed_next_stage"
+    ]
+  }
+}

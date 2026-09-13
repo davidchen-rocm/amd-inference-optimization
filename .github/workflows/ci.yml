@@ -1,0 +1,40 @@
+name: Validate source and publication privacy
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.11'
+      - name: Inspect the committed file set
+        run: python tools/check_publication.py
+      - name: Scan committed source for credentials
+        shell: bash
+        run: |
+          tool_dir="$(mktemp -d)"
+          scan_dir="$(mktemp -d)"
+          curl --fail --silent --show-error --location \
+            https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz \
+            --output "$tool_dir/gitleaks.tar.gz"
+          echo "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  $tool_dir/gitleaks.tar.gz" | sha256sum --check
+          tar -xzf "$tool_dir/gitleaks.tar.gz" -C "$tool_dir" gitleaks
+          git checkout-index --all --prefix="$scan_dir/"
+          "$tool_dir/gitleaks" dir --redact=100 --no-banner "$scan_dir"
+      - name: Install development dependencies
+        run: python -m pip install -e '.[dev]'
+      - name: Lint
+        run: ruff check src tests tools
+      - name: Test without a GPU
+        run: pytest -q -m 'not gpu'

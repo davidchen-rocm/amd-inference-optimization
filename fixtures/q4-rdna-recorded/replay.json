@@ -1,0 +1,132 @@
+{
+  "schema_version": 1,
+  "recording": {
+    "kind": "recorded_import",
+    "date": "2026-08-16",
+    "source_root": "math-rule-loop/artifacts/q4rdna-phase3",
+    "source_artifacts": [
+      {"name": "bench-q4k.json", "sha256": "a80708b953b20ffdd9ec093f80669bbe36265810fde89c97255871395d7a364a"},
+      {"name": "bench-rdna-old.json", "sha256": "5810b0deb8d4610e81b504b700bcc6731ac70859ee6d2363b49d70806f44b386"},
+      {"name": "bench-rdna-split.json", "sha256": "ae59cf71286c0305344d0d1de6968230df80060010e5ff727c511457fbdb0cd7"},
+      {"name": "profile-summary.json", "sha256": "ba10a16b70f68aca582e9a98c71af87483a4fad84dbf49ccc2936c1e77ab9fd9"},
+      {"name": "quality-threeway-expanded.json", "sha256": "5cf1d5289a17d74e626a4efbcbe491fc1abc2f23b06b62e3eb8dee9315e1eeee"}
+    ]
+  },
+  "target": {
+    "model": "Qwen3-8B-Q4_K_M.gguf",
+    "model_sha256": "77aa55af4ee7d18a44d31eb2aadd2b6e9bf754b5ea3bed43d10101263ea48d10",
+    "runtime": "llama.cpp",
+    "runtime_commit": "a7a6d0d",
+    "backend": "ROCm",
+    "gpu": "AMD Radeon RX 9070 XT",
+    "gfx_target": "gfx1201",
+    "rocm_version": "7.14.0",
+    "workload": "single-request decode"
+  },
+  "protocol": {
+    "generation_lengths": [128, 512],
+    "samples_per_length": 3,
+    "gpu_layers": 999,
+    "profiled_decode_tokens": 8
+  },
+  "baseline": {
+    "variant": "q4_k_m",
+    "benchmarks": {
+      "128": {"samples_tokens_per_second": [96.2762, 96.9878, 96.9362]},
+      "512": {"samples_tokens_per_second": [96.4143, 96.3215, 96.2595]}
+    },
+    "quality": {"perplexity": 3.434980010140082, "math_correct": 512, "math_total": 848}
+  },
+  "kernel_evidence": {
+    "case_reference": "recorded:q4rdna-phase3/profile-summary.json",
+    "phase": "decode",
+    "operator": "FFN quantized matrix-vector products",
+    "hotspot": "quantized GEMV",
+    "total_gpu_duration_ms": {"q4_k_m": 83.890203, "q4_rdna_old": 147.292862, "q4_rdna_split_k": 74.487882},
+    "target_gemv_duration_ms": {"q4_k_m_q4_k": 54.058, "q4_k_m_q6_k": 19.794, "q4_k_m_activation_q8_quantize": 2.646, "q4_rdna_old": 132.485, "q4_rdna_split_k": 59.420},
+    "dispatches": [
+      {"shape": "12288x4096_fused_gate_up", "q4_k_us": 92.041, "old_us": 108.641, "split_k_us": 90.240, "old_waves": 384, "split_k_waves": 3072, "old_vgpr": 96, "split_k_vgpr": 48},
+      {"shape": "4096x4096_plain", "q4_k_us": 18.240, "old_us": 41.161, "split_k_us": 16.880, "old_waves": 128, "split_k_waves": 1024, "old_vgpr": 88, "split_k_vgpr": 32},
+      {"shape": "1024x4096_plain", "q4_k_us": 5.880, "old_us": 41.880, "split_k_us": 5.400, "old_waves": 32, "split_k_waves": 1024, "old_vgpr": 88, "split_k_vgpr": 32}
+    ],
+    "stall_samples": {"q4_k_global_load_wait_fraction": 0.9631, "old_global_load_wait_fraction": 0.8201, "old_valu_fraction": 0.1452, "split_k_global_load_wait_fraction": 0.9743, "split_k_valu_fraction": 0.0175},
+    "unsupported_counters": ["FetchSize", "MemUnitBusy", "OccupancyPercent", "WAVE_DEP_WAIT", "WAVE_ISSUE_WAIT"],
+    "caveat": "ATT stall shares are qualitative single-CU samples; unsupported all-zero counters are unavailable, not measured zero."
+  },
+  "analysis": {
+    "bottleneck_assessment": {
+      "classification": "memory_bandwidth_and_latency",
+      "confidence": 0.86,
+      "evidence": [
+        "Q4_K production spends 96.31% of sampled decoded stall cycles at global-load waits.",
+        "Quantized weight GEMVs account for 73.852 ms of the 83.890 ms recorded GPU trace.",
+        "The supported timing and wave evidence is consistent across the same-run ablation."
+      ],
+      "missing_evidence": [
+        "FetchSize, MemUnitBusy, derived occupancy, and raw cache counters are unavailable on this ROCm/gfx1201 combination."
+      ]
+    },
+    "limit_estimate": {
+      "scoped_q4_k_m_packed_bytes_per_token": 4160028672,
+      "theoretical_bandwidth_bytes_per_second": 640000000000,
+      "theoretical_weight_stream_time_ms": 6.5000448,
+      "recorded_weight_gemv_time_ms_per_token": 9.2315,
+      "implied_fraction_of_peak_bandwidth": 0.704115,
+      "recorded_weight_gemv_gpu_time_share": 0.880341,
+      "conclusion": "The production path already uses a substantial fraction of peak bandwidth and is dominated by load wait, so reducing compulsory packed-weight bytes has a clearer ceiling than instruction-only tuning.",
+      "assumptions": [
+        "Each scoped packed weight is streamed once per decoded token.",
+        "640 GB/s is a peak roof, not a guaranteed sustained application bandwidth.",
+        "ATT evidence is qualitative; the estimate relies on supported kernel timings and packed byte counts."
+      ]
+    }
+  },
+  "experiments": [
+    {
+      "id": "q4_rdna_old_mapping",
+      "hypothesis": {
+        "observed_evidence": ["The production Q4_K decode path is dominated by quantized GEMV and global-load wait.", "Q4_RDNA packs the scoped weights in 11.30% fewer bytes."],
+        "interpretation": "Reducing packed weight traffic could improve a memory-bound decode path.",
+        "proposed_change": "Use the fixed 4.25 bpw Q4_RDNA representation with one lane owning a full K-length row.",
+        "expected_performance_signature": "Lower target GEMV time and higher decode tokens/s.",
+        "expected_e2e_effect": "Positive decode throughput improvement.",
+        "risks": ["The mapping may launch too few waves and serialize long accumulation chains."],
+        "required_validation": ["decode benchmark", "kernel timing", "quality evaluation"],
+        "stop_condition": "Reject if repeatable decode throughput does not exceed the baseline."
+      },
+      "change": {"kind": "runtime_config", "description": "Select old Q4_RDNA row mapping", "environment": {"LLAMA_Q4_RDNA_MAPPING": "old"}},
+      "benchmarks": {
+        "128": {"samples_tokens_per_second": [60.3524, 61.3941, 61.3885]},
+        "512": {"samples_tokens_per_second": [61.2202, 61.2215, 61.1938]}
+      },
+      "quality": {"perplexity": 3.4844986109449088, "math_correct": 499, "math_total": 848},
+      "expected_decision": "REJECT"
+    },
+    {
+      "id": "q4_rdna_split_k",
+      "hypothesis": {
+        "observed_evidence": ["The old mapping is 36% slower end to end.", "It launches only 32 to 384 waves for representative matrices and spends more stall cycles in VALU/dependency than the split mapping."],
+        "interpretation": "Device-wide wave supply and a long per-lane accumulation chain limit the old mapping, rather than the packed representation itself.",
+        "proposed_change": "Keep the same sidecar and binary, remove the old-mapping override, and cooperatively split K across wave32 lanes.",
+        "expected_performance_signature": "Launch 8x to 32x more waves and reduce target GEMV duration without changing representation or quality coordinates.",
+        "expected_e2e_effect": "At least 10% higher decode throughput than Q4_K_M.",
+        "risks": ["Cross-lane reduction overhead", "Small systematic quality loss from the fixed representation"],
+        "required_validation": ["same-binary decode benchmark", "kernel timing", "perplexity", "MMLU math"],
+        "stop_condition": "Reject if throughput gain is below 10% or the explicit quality budget is exceeded."
+      },
+      "change": {"kind": "runtime_config", "description": "Use cooperative split-K wave32 mapping with identical sidecar and binary", "environment": {}, "unset_environment": ["LLAMA_Q4_RDNA_MAPPING"]},
+      "benchmarks": {
+        "128": {"samples_tokens_per_second": [111.359, 111.669, 111.645]},
+        "512": {"samples_tokens_per_second": [111.176, 111.077, 111.047]}
+      },
+      "quality": {"perplexity": 3.4844986109449088, "math_correct": 499, "math_total": 848},
+      "expected_decision": "ACCEPT"
+    }
+  ],
+  "representation": {
+    "sidecar_sha256": "68f086c9d4992f317d3737ccfd50e24da275420766531d6f47e414068f23e7b8",
+    "bits_per_weight": 4.25,
+    "packed_byte_reduction_fraction": 0.1130015596200199,
+    "unchanged_between_experiments": true
+  }
+}

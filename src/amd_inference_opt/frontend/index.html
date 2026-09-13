@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>gpuopt control plane</title>
+    <link rel="stylesheet" href="/assets/styles.css?v=5">
+  </head>
+  <body>
+    <header class="app-header">
+      <a class="brand" href="/">gpuopt</a>
+      <nav class="top-nav" aria-label="Primary">
+        <a href="/models">Models</a>
+        <a href="/builder">Builder</a>
+        <a href="/drafts">Drafts</a>
+      </nav>
+      <span class="read-only">EVIDENCE READ ONLY · DRAFT MODE</span>
+      <span id="connection" class="status">Connecting</span>
+    </header>
+    <main id="app" aria-live="polite">
+      <p class="empty">Loading control-plane snapshot…</p>
+    </main>
+    <footer>Local AMD inference optimization control plane · evidence stays read-only · drafts never auto-run</footer>
+    <script defer src="/assets/app.js?v=6"></script>
+  </body>
+</html>

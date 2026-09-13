@@ -1,0 +1,139 @@
+# Tutorial task: establish a reproducible Q6_K baseline, then collect Level-2
+# kernel timing evidence before attempting any llama.cpp source optimization.
+schema_version: 1
+id: tutorial-qwen35-0_8b-q6-profile
+campaign_kind: llama_cpp_mixed_quant
+model:
+  path: /workspace/model-library/derived/Qwen3.5-0.8B/Q6_K/Qwen3.5-0.8B-Q6_K.gguf
+  sha256: 167f3f2b1095a7728c022115a8d7b878d5aa5117796aef6049368f6d756b760b
+  architecture: qwen
+  quantization: Q6_K
+runtime:
+  name: llama.cpp
+  repo_path: /workspace/math-rule-loop/tools/llama.cpp-source
+  base_commit: a7a6d0d269c896218b6c78e0933bd6a17519d3f6
+  build_flags:
+    - -DCMAKE_BUILD_TYPE=Release
+    - -DGGML_HIP=ON
+    - -DGGML_HIP_GRAPHS=ON
+    - -DGGML_HIP_MMQ_MFMA=ON
+    - -DGGML_HIP_NO_VMM=ON
+    - -DAMDGPU_TARGETS=gfx1201
+  build_dir: /workspace/amd-inference-optimization/.gpuopt-runtime/qwen3-8b-q8-live/build
+  prepared_binary_path: /workspace/amd-inference-optimization/.gpuopt-runtime/qwen3-8b-q8-live/build/bin/llama-bench
+  prepared_binary_sha256: 34dc9cc29918f224867b40c3c1a7a719479c7fdd8931ba21a530e10bca60e72d
+  backend: hip
+gpu:
+  gfx_target: gfx1201
+  device_id: 0
+  name: AMD Radeon RX 9070 XT
+rocm:
+  version: 7.14.0
+workload:
+  kind: single_request_decode
+  prompt_tokens: 0
+  generation_tokens: 128
+  batch_size: 1
+  concurrency: 1
+  seed: 20260822
+benchmark:
+  warmup_runs: 1
+  sample_count: 5
+  timeout_seconds: 600
+  benchmark_command:
+    - /workspace/amd-inference-optimization/.gpuopt-runtime/qwen3-8b-q8-live/build/bin/llama-bench
+    - -m
+    - /workspace/model-library/derived/Qwen3.5-0.8B/Q6_K/Qwen3.5-0.8B-Q6_K.gguf
+    - -p
+    - "0"
+    - -n
+    - 128,512
+    - -b
+    - "2048"
+    - -ub
+    - "512"
+    - -t
+    - "12"
+    - -r
+    - "5"
+    - -ngl
+    - "999"
+    - -mg
+    - "0"
+    - -dev
+    - ROCm0
+    - -o
+    - json
+    - -oe
+    - none
+  extra_args: []
+  required_metrics:
+    - tokens_per_second_tg128
+    - tokens_per_second_tg512
+objective:
+  primary_metric: tokens_per_second
+  minimum_improvement_percent: 1.0
+  maximize: true
+  metric_requirements:
+    - metric: tokens_per_second_tg128
+      minimum_improvement_percent: 1.0
+      maximize: true
+    - metric: tokens_per_second_tg512
+      minimum_improvement_percent: 1.0
+      maximize: true
+quality:
+  require_correctness: true
+  require_quality_evaluation: true
+  max_ppl_regression_percent: 0.5
+  max_accuracy_drop_percentage_points: 2.0
+  accuracy_metric: provisional_math_100_accuracy
+change_policy:
+  allowed_change_kinds:
+    - source_patch
+    - runtime_config
+  locked_coordinates:
+    - model_sha256
+    - quantization
+    - benchmark_protocol
+    - gpu_device
+  allowed_runtime_args: []
+environment:
+  required_match_fields:
+    - gpu_gfx
+    - gpu_device
+    - rocm_version
+    - runtime_base_commit
+    - model_sha256
+    - build_flags_hash
+  max_sample_cv_percent: 2.0
+  require_stable_telemetry: false
+  require_fresh_capture: true
+  require_run_identity: true
+  required_run_match_fields:
+    - protocol_hash
+    - model_sha256
+    - environment_hash
+budgets:
+  max_experiments: 6
+  max_gpu_minutes: 120.0
+  build_timeout_seconds: 1800
+  max_profile_level: LEVEL_2
+mcp:
+  command:
+    - /workspace/rocm-issue-agent/.venv/bin/rocm-agent-mcp
+  env:
+    ROCM_AGENT_HOME: /home/USER/.rocm-agent
+  cwd: /workspace/rocm-issue-agent
+  timeout_seconds: 900
+metadata:
+  origin_model_path: /workspace/model-library/origin/Qwen3.5-0.8B
+  bf16_model_path: /workspace/model-library/derived/Qwen3.5-0.8B/BF16/Qwen3.5-0.8B-BF16.gguf
+  minimum_free_disk_gib: "5"
+  benchmark_generation_tokens: "[128,512]"
+  benchmark_extra_args: "[]"
+  rocm_library_path: /workspace/amd-inference-optimization/.gpuopt-runtime/qwen3-8b-q8-live/build/bin:/opt/rocm/core-7.14/lib
+  cmake_path: /workspace/math-rule-loop/.venv/bin/cmake
+  build_jobs: "12"
+  profile_capture_limits: '{"max_trace_bytes":200000000,"max_trace_files":64,"max_events_per_type":10000,"max_percentile_samples_per_kernel":20}'
+  provisional_quality_summary: /workspace/amd-inference-optimization/.gpuopt-tutorial-qwen35-0.8b/06-q6-quality/summary.json
+  quality_policy: provisional-math-100.v1

@@ -1,0 +1,11 @@
+{
+  "evidence_paths": [
+    "artifacts/evidence/qwen35/inspection/target/v000001.json",
+    "artifacts/evidence/qwen35/inspection/hf-source/v000001.json",
+    "artifacts/evidence/qwen35/preparation/precision-sweep/v000001.json",
+    "artifacts/evidence/qwen35/inspection/rocm-connection/v000001.json",
+    "artifacts/evidence/qwen35/inspection/rocm_snapshot/v000001.json",
+    "artifacts/evidence/qwen35/inspection/rocm_hip_capabilities/v000001.json",
+    "artifacts/evidence/qwen35/inspection/rocm_observation_capabilities/v000001.json"
+  ]
+}

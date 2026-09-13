@@ -1,0 +1,151 @@
+schema_version: 1
+id: qwen35-9b-gfx1201-v2
+quality_policy: provisional-math-100.v1
+max_candidates: 16
+strategy_order: [mixed_bit, shape_kernel, kv_cache]
+task:
+  schema_version: 1
+  id: qwen35-9b-gfx1201-task-v2
+  campaign_kind: llama_cpp_mixed_quant
+  model:
+    path: /workspace/math-rule-loop/models/qwen3.5-9b-precision/Q8_0.gguf
+    sha256: 18a8bc6bad33f11abb613598ed4168d5ee041540778f09e66ae0630954c5f611
+    architecture: qwen
+    quantization: Q8_0
+  runtime:
+    repo_path: /workspace/math-rule-loop/tools/llama.cpp-source
+    base_commit: a7a6d0d269c896218b6c78e0933bd6a17519d3f6
+    build_flags:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DGGML_HIP=ON
+      - -DGGML_HIP_GRAPHS=ON
+      - -DGGML_HIP_MMQ_MFMA=ON
+      - -DGGML_HIP_NO_VMM=ON
+      - -DAMDGPU_TARGETS=gfx1201
+    prepared_binary_path: /workspace/amd-inference-optimization/.gpuopt-runtime/qwen3-8b-q8-live/build/bin/llama-bench
+    prepared_binary_sha256: 34dc9cc29918f224867b40c3c1a7a719479c7fdd8931ba21a530e10bca60e72d
+  gpu:
+    gfx_target: gfx1201
+    device_id: 0
+    name: AMD Radeon RX 9070 XT
+  rocm:
+    version: "7.14"
+    hip_version: "7.14"
+  workload:
+    kind: single_request_decode
+    prompt_tokens: 0
+    generation_tokens: 128
+    batch_size: 1
+    concurrency: 1
+    context_size: 32768
+    seed: 20260819
+  benchmark:
+    warmup_runs: 1
+    sample_count: 5
+    timeout_seconds: 3600
+    required_metrics: [pp512, tg128, tg512]
+  objective:
+    primary_metric: tokens_per_second
+    minimum_improvement_percent: 0
+    metric_requirements:
+      - {metric: tg128, minimum_improvement_percent: 0, maximize: true}
+      - {metric: tg512, minimum_improvement_percent: 0, maximize: true}
+  quality:
+    require_correctness: true
+    require_quality_evaluation: true
+    max_ppl_regression_percent: 0.5
+    max_accuracy_drop_percentage_points: 2
+    accuracy_metric: provisional_math_100_accuracy
+  change_policy:
+    allowed_change_kinds: [runtime_config, source_patch]
+    locked_coordinates:
+      - hf_revision=c202236235762e1c871ad0ccb60c8ee5ba337b9a
+      - llama_cpp_commit=a7a6d0d269c896218b6c78e0933bd6a17519d3f6
+      - gpu=ROCm0
+      - benchmark=pp512,tg128,tg512,b2048,ub512,t12
+      - quality=provisional-math-100.v1
+  environment:
+    max_sample_cv_percent: 2
+    require_stable_telemetry: false
+    require_fresh_capture: true
+    require_run_identity: true
+  budgets:
+    max_experiments: 16
+    max_gpu_minutes: 360
+    build_timeout_seconds: 3600
+    max_profile_level: LEVEL_2
+  mcp:
+    command:
+      - /workspace/rocm-issue-agent/.venv/bin/rocm-agent-mcp
+    env:
+      ROCM_AGENT_HOME: /workspace/rocm-issue-agent
+    timeout_seconds: 1800
+  metadata:
+    supersedes_campaign: qwen35-9b-gfx1201
+    hf_model: Qwen/Qwen3.5-9B
+    hf_revision: c202236235762e1c871ad0ccb60c8ee5ba337b9a
+    scope: text-only; vision tower and MTP head excluded
+    precision_preparation_manifest: /workspace/math-rule-loop/models/qwen3.5-9b-precision/preparation.json
+    q8_model: /workspace/math-rule-loop/models/qwen3.5-9b-precision/Q8_0.gguf
+    q6_model: /workspace/math-rule-loop/models/qwen3.5-9b-precision/Q6_K.gguf
+    q5_model: /workspace/math-rule-loop/models/qwen3.5-9b-precision/Q5_K_M.gguf
+    q7_mixed_model: /workspace/math-rule-loop/models/qwen3.5-9b-precision/Q7_MIX_Q6_Q8.gguf
+    requested_q7_resolution: no native llama.cpp Q7; use a manifest-bound Q6/Q8 mixed model at 7.11 effective bpw
+    quality_scope: 100 fixed stratified math questions plus PPL and greedy canaries
+planning_inputs:
+  model_geometry:
+    architecture: qwen35
+    block_count: 32
+    hidden_size: 4096
+    intermediate_size: 12288
+    attention_head_count: 16
+    kv_head_count: 4
+    head_dim: 256
+    vocab_size: 248320
+    max_context_tokens: 262144
+    full_attention_layers: [3, 7, 11, 15, 19, 23, 27, 31]
+  mixed_bit_reference_quantizations: [Q8_0, Q6_K, Q5_K_M]
+  mixed_bit_prepared_candidates:
+    - id: q7mix
+      label: Q6/Q8 mixed 7.11 bpw
+      base_quantization: Q6_K
+      effective_bpw: 7.11
+      model:
+        path: /workspace/math-rule-loop/models/qwen3.5-9b-precision/Q7_MIX_Q6_Q8.gguf
+        sha256: 39e4be97738d1e943701314a30c762f4db2920be70836bf85d754bc04e3dd62e
+        size_bytes: 7965696768
+      preparation_manifest:
+        path: /workspace/math-rule-loop/models/qwen3.5-9b-precision/Q7_MIX_Q6_Q8.gguf.preparation.json
+        sha256: 47eb61660fb6609f69e23ae958c044eeae41cfe4e55f434a7db5fc602db3a3ac
+        size_bytes: 72799
+      tensor_assignment:
+        default_weight: Q6_K
+        token_embd.weight: Q8_0
+        output.weight: Q8_0
+        full_attention_q_k_v_output: Q8_0
+  mixed_bit_provenance:
+    source_model:
+      path: /workspace/math-rule-loop/models/qwen3.5-9b-bf16/Qwen3.5-9B-BF16.gguf
+      sha256: a7badb79ca820fc42a5a7f4c945ca14bdbf7f60062ae208b3914a4813eaf5cfe
+      size_bytes: 17920696768
+    calibration_corpus:
+      path: /workspace/math-rule-loop/artifacts/datasets/rule-loop-v1.1/train.jsonl
+      sha256: 977132827ff19230224bd4a3fc8d00e2575a18226211a1b308d7529dea171d90
+      size_bytes: 1498351
+    importance_matrix:
+      path: /workspace/math-rule-loop/models/qwen3.5-9b-precision/imatrix.gguf
+      sha256: 19d2a8f4b60306d36fa57acaa4b4f04836c38ddc17fddb5ae173ce8fef0b4284
+      size_bytes: 5150240
+    quantizer_binary:
+      path: /workspace/amd-inference-optimization/.gpuopt-runtime/qwen3-8b-q8-live/build/bin/llama-quantize
+      sha256: 85e80e593ca726f60d57ae5ad4bc0f5e9ddb5f81ef9e51c659d81869f8d37e15
+      size_bytes: 17920
+    llama_cpp_commit: a7a6d0d269c896218b6c78e0933bd6a17519d3f6
+    source_quantization: BF16
+    direct_from_source: true
+  kv_capabilities:
+    supported_cache_types: [f16, q8_0, q4_0]
+    flash_attention: true
+    max_context_tokens: 32768
+    minimum_depth: 1
+    device_selector: ROCm0

@@ -1,0 +1,45 @@
+schema_version: 2
+id: qwen-gfx1201-capability-closure
+quality_policy: provisional-math-100.v1
+mixed_bit_max_candidates: 8
+task:
+  schema_version: 1
+  id: qwen-gfx1201-capability-closure
+  campaign_kind: llama_cpp_mixed_quant
+  model:
+    path: /path/to/source-or-selected-model.gguf
+    architecture: qwen
+    quantization: BF16
+  runtime:
+    name: llama.cpp
+    repo_path: /path/to/llama.cpp
+    base_commit: REPLACE_WITH_COMMIT
+    build_flags:
+      - -DGGML_HIP=ON
+      - -DGGML_HIP_GRAPHS=ON
+      - -DGGML_HIP_MMQ_MFMA=ON
+      - -DAMDGPU_TARGETS=gfx1201
+  gpu:
+    gfx_target: gfx1201
+    device_id: 0
+    name: AMD Radeon RX 9070 XT
+  benchmark:
+    warmup_runs: 1
+    sample_count: 7
+    required_metrics: [pp512, tg128, tg512]
+  quality:
+    require_correctness: true
+    require_quality_evaluation: true
+    max_ppl_regression_percent: 0.5
+    max_accuracy_drop_percentage_points: 2.0
+    accuracy_metric: provisional_math_100_accuracy
+  budgets:
+    max_experiments: 16
+    max_gpu_minutes: 240
+    max_profile_level: LEVEL_4
+  mcp:
+    command: [/absolute/path/to/rocm-agent-mcp]
+  metadata:
+    tensor_naming_config: /path/to/tensor-naming.yaml
+    precision_search_config: /path/to/precision-search.yaml
+

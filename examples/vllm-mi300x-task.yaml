@@ -1,0 +1,307 @@
+# Illustrative schema-valid coordinates, not a captured MI300X deployment.
+# Replace versions, paths, BDF, UUID and repeated-character hashes with observations.
+# Recompute task.benchmark.protocol_hash from VLLMServingProtocol after edits.
+# This template keeps profiling unavailable and the CLI never starts a GPU.
+# See docs/vllm-mi300x.md; Qwen3.6 historical results use a different protocol.
+schema_version: 1
+task:
+  schema_version: 1
+  id: vllm-mi300x-qwen3-8b
+  campaign_kind: vllm_mi300x
+  model:
+    path: /workspace/models/Qwen/Qwen3-8B
+    sha256: null
+    architecture: Qwen3ForCausalLM
+    quantization: null
+  runtime:
+    name: vllm
+    deployment: native
+    version: 0.10.1+rocm
+    executable: /opt/venv/bin/python3
+    executable_sha256: "2222222222222222222222222222222222222222222222222222222222222222"
+    environment_manifest_sha256: "3333333333333333333333333333333333333333333333333333333333333333"
+    image: registry.example.invalid/vllm-rocm:replace-me
+    image_digest: "4444444444444444444444444444444444444444444444444444444444444444"
+    source_commit: null
+    python_version: 3.12.4
+    pytorch_version: 2.7.1+rocm6.4
+    rocm_version: 6.4.1
+  gpu:
+    gfx_target: gfx942
+    device_id: 0
+    name: AMD Instinct MI300X
+    board_type: OAM
+  rocm:
+    version: 6.4.1
+    hip_version: 6.4.1
+  workload:
+    kind: online_serving
+    input_tokens: 1024
+    output_tokens: 256
+    num_prompts: 64
+    concurrency: 8
+    seed: 42
+  benchmark:
+    warmup_runs: 1
+    sample_count: 3
+    timeout_seconds: 900
+    benchmark_command:
+      - /opt/venv/bin/python3
+      - -I
+      - -m
+      - vllm.entrypoints.cli.main
+      - bench
+      - serve
+      - --backend
+      - openai
+      - --base-url
+      - http://127.0.0.1:8000
+      - --endpoint
+      - /v1/completions
+      - --model
+      - Qwen/Qwen3-8B
+      - --dataset-name
+      - random
+      - --num-prompts
+      - "64"
+      - --seed
+      - "42"
+      - --max-concurrency
+      - "8"
+      - --random-input-len
+      - "1024"
+      - --random-output-len
+      - "256"
+    extra_args: []
+    required_metrics:
+      - request_throughput_requests_per_second
+      - output_throughput_tokens_per_second
+      - total_throughput_tokens_per_second
+      - mean_ttft_ms
+      - mean_tpot_ms
+      - mean_itl_ms
+    protocol_hash: "51ccee63d8c770796b4490aa5c737e514f54e4f47e0ab4ae251abc66fb208bd1"
+  objective:
+    primary_metric: output_throughput_tokens_per_second
+    minimum_improvement_percent: 0
+    maximize: true
+    metric_requirements:
+      - metric: output_throughput_tokens_per_second
+        minimum_improvement_percent: 5
+        maximize: true
+  quality:
+    require_correctness: true
+    require_quality_evaluation: true
+    max_ppl_regression_percent: null
+    max_accuracy_drop_percentage_points: null
+    accuracy_metric: math_accuracy
+    accuracy_requirements:
+      - metric: math_accuracy
+        max_drop_percentage_points: 0.01
+  change_policy:
+    allowed_change_kinds:
+      - runtime_config
+    locked_coordinates:
+      - image_digest
+      - model_snapshot_digest
+      - model_revision
+      - tokenizer_revision
+      - gpu_device_identity
+      - gpu_partition
+      - dtype
+      - quantization
+      - tensor_parallel_size
+      - benchmark_protocol
+      - runtime_environment
+    allowed_runtime_args:
+      - --max-num-seqs
+      - --max-num-batched-tokens
+      - --gpu-memory-utilization
+      - --enforce-eager
+    runtime_arg_arity:
+      --max-num-seqs: 1
+      --max-num-batched-tokens: 1
+      --gpu-memory-utilization: 1
+      --enforce-eager: 0
+  environment:
+    required_match_fields:
+      - gpu_gfx
+      - gpu_product_name
+      - gpu_oam_id
+      - gpu_xcc_count
+      - gpu_device
+      - gpu_device_identity
+      - gpu_device_uuid
+      - gpu_pci_bdf
+      - gpu_compute_partition
+      - gpu_memory_partition
+      - gpu_partition_id
+      - rocm_version
+      - vllm_version
+      - pytorch_version
+      - python_version
+      - python_executable_sha256
+      - environment_manifest_sha256
+      - vllm_launcher_sha256
+      - image_digest
+      - hf_model_id
+      - hf_revision
+      - tokenizer_revision
+      - model_snapshot_digest
+      - serving_protocol_sha256
+      - dtype
+      - quantization
+      - tensor_parallel_size
+    max_sample_cv_percent: 2
+    require_stable_telemetry: true
+    require_fresh_capture: true
+    require_run_identity: false
+    required_run_match_fields: []
+  budgets:
+    max_experiments: 3
+    max_gpu_minutes: 60
+    build_timeout_seconds: 1800
+    max_profile_level: LEVEL_2
+  mcp:
+    command:
+      - /workspace/rocm-issue-agent/.venv/bin/rocm-issue-agent-mcp
+    env:
+      ROCR_VISIBLE_DEVICES: GPU-REPLACE-WITH-ENUMERATION-HIP-UUID
+      PYTHONNOUSERSITE: "1"
+    cwd: /workspace/rocm-issue-agent
+    timeout_seconds: 900
+  metadata:
+    execution_model: native-inside-pinned-container
+    vllm_v0_boundary: single-mi300x-tp1
+model:
+  model_id: Qwen/Qwen3-8B
+  local_path: /workspace/models/Qwen/Qwen3-8B
+  snapshot_manifest_path: /workspace/model-manifests/qwen3-8b.snapshot.json
+  revision: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+  snapshot_digest: bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+  tokenizer_revision: cccccccccccccccccccccccccccccccccccccccc
+device:
+  gfx_target: gfx942
+  device_ids:
+    - 0
+  tensor_parallel_size: 1
+  product_name: AMD Instinct MI300X
+  oam_id: 0
+  xcc_count: 8
+  compute_partition: SPX
+  memory_partition: NPS1
+  device_uuid: GPU-REPLACE-WITH-ENUMERATION-HIP-UUID
+  pci_bdf: "0000:41:00.0"
+  partition_id: 0
+  amd_smi_command_sha256: "6666666666666666666666666666666666666666666666666666666666666666"
+  hip_probe_command_sha256: "7777777777777777777777777777777777777777777777777777777777777777"
+serving:
+  server_argv:
+    - /opt/venv/bin/python3
+    - -I
+    - -m
+    - vllm.entrypoints.openai.api_server
+    - --model
+    - /workspace/models/Qwen/Qwen3-8B
+    - --served-model-name
+    - Qwen/Qwen3-8B
+    - --host
+    - 127.0.0.1
+    - --port
+    - "8000"
+    - --tensor-parallel-size
+    - "1"
+    - --dtype
+    - bfloat16
+  benchmark_argv:
+    - /opt/venv/bin/python3
+    - -I
+    - -m
+    - vllm.entrypoints.cli.main
+    - bench
+    - serve
+    - --backend
+    - openai
+    - --base-url
+    - http://127.0.0.1:8000
+    - --endpoint
+    - /v1/completions
+    - --model
+    - Qwen/Qwen3-8B
+    - --dataset-name
+    - random
+    - --num-prompts
+    - "64"
+    - --seed
+    - "42"
+    - --max-concurrency
+    - "8"
+    - --random-input-len
+    - "1024"
+    - --random-output-len
+    - "256"
+  cwd: /workspace
+  server_env:
+    ROCR_VISIBLE_DEVICES: GPU-REPLACE-WITH-ENUMERATION-HIP-UUID
+    PYTHONNOUSERSITE: "1"
+  host: 127.0.0.1
+  port: 8000
+  benchmark_backend: openai
+  benchmark_endpoint: /v1/completions
+  benchmark_dataset: random
+  tensor_parallel_size: 1
+  dtype: bfloat16
+  quantization: null
+  concurrency: 8
+  input_tokens: 1024
+  output_tokens: 256
+  num_prompts: 64
+  seed: 42
+  warmup_runs: 1
+  sample_count: 3
+  timeout_seconds: 900
+  required_metrics:
+    - request_throughput_requests_per_second
+    - output_throughput_tokens_per_second
+    - total_throughput_tokens_per_second
+    - mean_ttft_ms
+    - mean_tpot_ms
+    - mean_itl_ms
+  engine_config:
+    launcher_kind: python_module
+    launcher: vllm.entrypoints.openai.api_server
+    launcher_sha256: "1111111111111111111111111111111111111111111111111111111111111111"
+profile:
+  # Fail closed until a project-specific offline command has been materialized
+  # through tools/vllm_profile_launcher.py with manifests and a sidecar.
+  mode: unavailable
+  profile_argv: []
+  engine_mode: vllm_offline_generate
+  launcher_path: null
+  launcher_sha256: null
+  cwd: null
+  environment: unavailable
+  unavailable_reason: >-
+    Configure and hash a real offline vLLM workload plus the project-owned
+    profile launcher before enabling exact profile approval.
+  preset: kernel-timing
+  timeout_seconds: 900
+  max_trace_bytes: 200000000
+  max_trace_files: 64
+  max_events_per_type: 10000
+  max_percentile_samples_per_kernel: 20
+quality_protocol:
+  argv:
+    # This is a user-supplied model/dataset evaluator, not a bundled tool.
+    - /workspace/user-tools/vllm_quality_eval.py
+    - --base-url
+    - http://127.0.0.1:8000
+    - --model
+    - Qwen/Qwen3-8B
+    - --output
+    - /workspace/results/vllm-quality.json
+  cwd: /workspace
+  env: {}
+  timeout_seconds: 14400
+  output_path: /workspace/results/vllm-quality.json
+  output_contract: amd-inference-opt.QualityResult.v1

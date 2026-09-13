@@ -1,0 +1,29 @@
+{
+  "limitations": [
+    "MMLU uses llama.cpp's normalized continuation log-prob scorer, not an official leaderboard harness.",
+    "Perplexity covers a fixed MATH-500-derived corpus, not WikiText-2."
+  ],
+  "math": {
+    "path": "mmlu-math.jsonl",
+    "sha256": "01b733f03d525466e09b228aeeae3f43463b51bde27f08d8ad8f00e7eb3d42a9",
+    "subjects": {
+      "abstract_algebra": 100,
+      "college_mathematics": 100,
+      "elementary_mathematics": 378,
+      "high_school_mathematics": 270
+    },
+    "total": 848
+  },
+  "perplexity": {
+    "bytes": 374589,
+    "examples": 500,
+    "path": "math500-ppl.txt",
+    "sha256": "b793396c1072fcd881b6d727200453d08ea24bb3bb2d45eae36ffd2424a56a12"
+  },
+  "schema": "gpuopt.q8-runtime-quality-fixture.v1",
+  "seed": 20260815,
+  "sources": {
+    "math_accuracy": "cais/mmlu test split, four math subjects",
+    "perplexity": "HuggingFaceH4/MATH-500 test problem+solution concatenation"
+  }
+}

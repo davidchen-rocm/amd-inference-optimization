@@ -1,0 +1,82 @@
+schema_version: 1
+id: qwen3-8b-consumer-amd
+quality_policy: provisional-math-100.v1
+max_candidates: 16
+strategy_order: [mixed_bit, shape_kernel, kv_cache]
+task:
+  schema_version: 1
+  id: qwen3-8b-consumer-amd-task
+  campaign_kind: llama_cpp_consumer_amd_final
+  model:
+    path: /workspace/math-rule-loop/models/qwen3-8b-q6/Qwen3-8B-Q6_K.gguf
+    sha256: b5445085f052d9df572d3df7034d9fcfabaf63c17ed3a92f37e03c059180cc9c
+    architecture: qwen
+    quantization: Q6_K
+  runtime:
+    repo_path: /workspace/math-rule-loop/tools/llama.cpp-source
+    base_commit: a7a6d0d269c896218b6c78e0933bd6a17519d3f6
+    build_flags:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DGGML_HIP=ON
+      - -DAMDGPU_TARGETS=gfx1201
+  gpu:
+    gfx_target: gfx1201
+    device_id: 0
+    name: AMD Radeon RX 9070 XT
+  benchmark:
+    warmup_runs: 1
+    sample_count: 5
+    required_metrics: [tokens_per_second]
+  objective:
+    primary_metric: tokens_per_second
+    minimum_improvement_percent: 10
+  quality:
+    require_correctness: true
+    require_quality_evaluation: true
+    max_ppl_regression_percent: 0.5
+    max_accuracy_drop_percentage_points: 2
+    accuracy_metric: provisional_math_100_accuracy
+  budgets:
+    max_experiments: 16
+    max_gpu_minutes: 240
+    max_profile_level: LEVEL_2
+  mcp:
+    command:
+      - /workspace/rocm-issue-agent/.venv/bin/rocm-agent-mcp
+    timeout_seconds: 900
+planning_inputs:
+  model_geometry:
+    architecture: qwen3
+    block_count: 36
+    hidden_size: 4096
+    intermediate_size: 12288
+    attention_head_count: 32
+    kv_head_count: 8
+    vocab_size: 151936
+    max_context_tokens: 32768
+  mixed_bit_provenance:
+    source_model:
+      path: /workspace/math-rule-loop/models/qwen3-8b-bf16/Qwen3-8B-BF16.gguf
+      sha256: 89ed102cc1b85f25298b4d2637273bd329b9a4593e8cf2315af54caa58228517
+      size_bytes: 16388044160
+    calibration_corpus:
+      path: /workspace/math-rule-loop/artifacts/datasets/rule-loop-v1.1/train.jsonl
+      sha256: 977132827ff19230224bd4a3fc8d00e2575a18226211a1b308d7529dea171d90
+      size_bytes: 1498351
+    importance_matrix:
+      path: /workspace/math-rule-loop/models/qwen3-8b-mixed/qwen3-rule-loop-imatrix.gguf
+      sha256: 4d321ad5964780af62ae922f3d1422a09ab203eb95733fe0034d449cc3079a9f
+      size_bytes: 5347264
+    quantizer_binary:
+      path: /workspace/amd-inference-optimization/.gpuopt-runtime/qwen3-8b-q8-live/build/bin/llama-quantize
+      sha256: 85e80e593ca726f60d57ae5ad4bc0f5e9ddb5f81ef9e51c659d81869f8d37e15
+      size_bytes: 17920
+    llama_cpp_commit: a7a6d0d269c896218b6c78e0933bd6a17519d3f6
+    source_quantization: BF16
+    direct_from_source: true
+  kv_capabilities:
+    supported_cache_types: [f16, q8_0, q4_0]
+    flash_attention: true
+    max_context_tokens: 32768
+    minimum_depth: 1
+    device_selector: ROCm0

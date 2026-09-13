@@ -1,0 +1,238 @@
+diff --git a/ggml/src/ggml-cuda/q4rdna.cu b/ggml/src/ggml-cuda/q4rdna.cu
+--- a/ggml/src/ggml-cuda/q4rdna.cu
++++ b/ggml/src/ggml-cuda/q4rdna.cu
+@@ -20,6 +20,7 @@
+ constexpr int Q4RDNA_GROUP = 64;
+ constexpr int Q4RDNA_TILE_ROWS = 32;
+ constexpr int Q4RDNA_TILE_BYTES = 1088;
++constexpr int Q3RDNA_TILE_BYTES = 832;
+ constexpr int Q4RDNA_WARPS = 8;
+ constexpr int Q4RDNA_THREADS = Q4RDNA_TILE_ROWS * Q4RDNA_WARPS;
+ 
+@@ -44,6 +45,15 @@
+     uint64_t size;
+     uint64_t reserved;
+ };
++
++enum class rdna_format : uint32_t {
++    q3 = 3,
++    q4 = 4,
++};
++
++rdna_format q4rdna_entry_format(uint64_t metadata) {
++    return static_cast<rdna_format>(uint32_t(metadata));
++}
+ #pragma pack(pop)
+ 
+ static_assert(sizeof(q4rdna_file_header) == 48, "unexpected Q4_RDNA header size");
+@@ -52,6 +62,7 @@
+ struct q4rdna_device_entry {
+     uint32_t rows;
+     uint32_t columns;
++    rdna_format format;
+     uint64_t relative_offset;
+     uint64_t size;
+     uint64_t hits = 0;
+@@ -128,10 +139,18 @@
+ 
+     std::ifstream input(path, std::ios::binary);
+     q4rdna_file_header header{};
+-    if (!input || !read_exact(input, &header, sizeof(header)) ||
+-            std::memcmp(header.magic, "Q4RDNA1", 8) != 0 || header.version != 1 ||
++    if (!input || !read_exact(input, &header, sizeof(header))) {
++        std::fprintf(stderr, "Q4_RDNA: invalid sidecar header: %s\n", path);
++        return;
++    }
++    const bool is_v1 =
++        std::memcmp(header.magic, "Q4RDNA1", 8) == 0 && header.version == 1;
++    const bool is_v2 =
++        std::memcmp(header.magic, "MXRDNA2", 8) == 0 && header.version == 2;
++    if ((!is_v1 && !is_v2) ||
+             header.group != Q4RDNA_GROUP || header.tile_rows != Q4RDNA_TILE_ROWS ||
+-            header.tile_bytes != Q4RDNA_TILE_BYTES) {
++            (is_v1 && header.tile_bytes != Q4RDNA_TILE_BYTES) ||
++            (is_v2 && header.tile_bytes != 0)) {
+         std::fprintf(stderr, "Q4_RDNA: invalid sidecar header: %s\n", path);
+         return;
+     }
+@@ -141,17 +160,27 @@
+         std::fprintf(stderr, "Q4_RDNA: truncated sidecar index: %s\n", path);
+         return;
+     }
++    uint32_t q3_entries = 0;
+     for (const q4rdna_file_entry & entry : file_entries) {
++        const rdna_format format =
++            is_v1 ? rdna_format::q4 : q4rdna_entry_format(entry.reserved);
++        if (format != rdna_format::q3 && format != rdna_format::q4) {
++            std::fprintf(stderr, "Q4_RDNA: invalid RDNA format in sidecar\n");
++            return;
++        }
++        const uint64_t bytes_per_group = format == rdna_format::q3 ? 26 : 34;
+         if (std::memchr(entry.name, '\0', sizeof(entry.name)) == nullptr ||
+                 entry.offset < header.data_offset || entry.offset + entry.size < entry.offset ||
+                 entry.offset + entry.size > header.data_offset + header.data_bytes ||
+                 entry.rows % Q4RDNA_TILE_ROWS != 0 || entry.columns % Q4RDNA_GROUP != 0 ||
+-                entry.size != uint64_t(entry.rows) * entry.columns * 34 / Q4RDNA_GROUP) {
++                entry.size != uint64_t(entry.rows) * entry.columns * bytes_per_group / Q4RDNA_GROUP) {
+             std::fprintf(stderr, "Q4_RDNA: invalid sidecar entry\n");
+             return;
+         }
+         value.entries.emplace(entry.name, q4rdna_device_entry{
+-            entry.rows, entry.columns, entry.offset - header.data_offset, entry.size, 0});
++            entry.rows, entry.columns, format,
++            entry.offset - header.data_offset, entry.size, 0});
++        q3_entries += format == rdna_format::q3;
+     }
+ 
+     ggml_cuda_set_device(device);
+@@ -174,8 +203,9 @@
+     }
+     value.enabled = true;
+     std::atexit(q4rdna_report_stats);
+-    std::fprintf(stderr, "Q4_RDNA: loaded %u tensors, %.2f GiB on device 0 from %s\n",
+-                 header.count, double(header.data_bytes) / (1024.0 * 1024.0 * 1024.0), path);
++    std::fprintf(stderr, "Q4_RDNA: loaded %u tensors (%u Q3), %.2f GiB on device 0 from %s\n",
++                 header.count, q3_entries,
++                 double(header.data_bytes) / (1024.0 * 1024.0 * 1024.0), path);
+ }
+ 
+ __device__ __forceinline__ int q4rdna_low(uint8_t value) {
+@@ -186,6 +216,10 @@
+     return int(static_cast<int8_t>(value)) >> 4;
+ }
+ 
++__device__ __forceinline__ int q3rdna_decode(uint32_t value) {
++    return (int(value & 7u) ^ 4) - 4;
++}
++
+ template <bool use_gate, bool use_add>
+ __global__ __launch_bounds__(Q4RDNA_THREADS) void q4rdna_gemv_old_mapping(
+         const uint8_t * weights, const uint8_t * gate_weights, const float * activation,
+@@ -396,6 +430,76 @@
+     }
+ }
+ 
++template <int split_waves>
++__global__ __launch_bounds__(Q4RDNA_THREADS) void q4rdna_gemv_split_k_gate_q3(
++        const uint8_t * up_weights, const uint8_t * gate_weights,
++        const float * activation, float * output, int columns) {
++    static_assert(split_waves == 8, "Q3 gate experiment requires split8");
++    constexpr int tiles_per_block = Q4RDNA_WARPS / split_waves;
++    __shared__ float up_shared[Q4RDNA_WARPS][Q4RDNA_TILE_ROWS];
++    __shared__ float gate_shared[Q4RDNA_WARPS][Q4RDNA_TILE_ROWS];
++    const int lane = threadIdx.x & (Q4RDNA_TILE_ROWS - 1);
++    const int warp = threadIdx.x / Q4RDNA_TILE_ROWS;
++    const int split = warp & (split_waves - 1);
++    const int tile_in_block = warp / split_waves;
++    const int row_tile = blockIdx.x * tiles_per_block + tile_in_block;
++    const int groups = columns / Q4RDNA_GROUP;
++    float up_sum = 0.0f;
++    float gate_sum = 0.0f;
++
++    for (int group = split; group < groups; group += split_waves) {
++        const uint8_t * up_tile =
++            up_weights + uint64_t(row_tile * groups + group) * Q4RDNA_TILE_BYTES;
++        const uint8_t * gate_tile =
++            gate_weights + uint64_t(row_tile * groups + group) * Q3RDNA_TILE_BYTES;
++        float up_low = 0.0f;
++        float up_high = 0.0f;
++        float gate_partial = 0.0f;
++#pragma unroll
++        for (int chunk = 0; chunk < 8; ++chunk) {
++#pragma unroll
++            for (int pair = 0; pair < 4; ++pair) {
++                const int index = chunk * 4 + pair;
++                const float activation_low = activation[group * Q4RDNA_GROUP + 2 * index];
++                const float activation_high = activation[group * Q4RDNA_GROUP + 2 * index + 1];
++                const uint8_t packed = up_tile[64 + index * Q4RDNA_TILE_ROWS + lane];
++                up_low = fmaf(float(q4rdna_low(packed)), activation_low, up_low);
++                up_high = fmaf(float(q4rdna_high(packed)), activation_high, up_high);
++            }
++            const uint32_t gate_packed =
++                uint32_t(gate_tile[64 + (chunk * 3 + 0) * Q4RDNA_TILE_ROWS + lane]) |
++                uint32_t(gate_tile[64 + (chunk * 3 + 1) * Q4RDNA_TILE_ROWS + lane]) << 8 |
++                uint32_t(gate_tile[64 + (chunk * 3 + 2) * Q4RDNA_TILE_ROWS + lane]) << 16;
++#pragma unroll
++            for (int value = 0; value < 8; ++value) {
++                gate_partial = fmaf(
++                    float(q3rdna_decode(gate_packed >> (3 * value))),
++                    activation[group * Q4RDNA_GROUP + chunk * 8 + value],
++                    gate_partial);
++            }
++        }
++        const float up_scale =
++            __half2float(reinterpret_cast<const half *>(up_tile)[lane]);
++        const float gate_scale =
++            __half2float(reinterpret_cast<const half *>(gate_tile)[lane]);
++        up_sum = fmaf(up_scale, up_low + up_high, up_sum);
++        gate_sum = fmaf(gate_scale, gate_partial, gate_sum);
++    }
++
++    up_shared[warp][lane] = up_sum;
++    gate_shared[warp][lane] = gate_sum;
++    __syncthreads();
++    if (split == 0) {
++#pragma unroll
++        for (int other = 1; other < split_waves; ++other) {
++            up_sum += up_shared[warp + other][lane];
++            gate_sum += gate_shared[warp + other][lane];
++        }
++        output[row_tile * Q4RDNA_TILE_ROWS + lane] =
++            up_sum * ggml_cuda_op_silu_single(gate_sum);
++    }
++}
++
+ template <bool use_gate, bool use_add, int split_waves, int slice_rows>
+ __global__ __launch_bounds__(split_waves * Q4RDNA_TILE_ROWS) void q4rdna_gemv_small_split_k(
+         const uint8_t * weights, const uint8_t * gate_weights, const float * activation,
+@@ -726,7 +830,7 @@
+     }
+ 
+     q4rdna_device_entry * entry = q4rdna_find(ctx, src0);
+-    if (entry == nullptr) return false;
++    if (entry == nullptr || entry->format != rdna_format::q4) return false;
+     if (src1->ne[0] != entry->columns || dst->ne[0] != entry->rows) {
+         std::fprintf(stderr, "Q4_RDNA: shape mismatch for %s\n", src0->name);
+         return false;
+@@ -754,7 +858,8 @@
+             src1->ne[1] != 1 || src1->ne[2] != 1 || src1->ne[3] != 1 ||
+             !ggml_is_contiguous(src1) || !ggml_is_contiguous(add) || !ggml_is_contiguous(dst)) return false;
+     q4rdna_device_entry * entry = q4rdna_find(ctx, src0);
+-    if (entry == nullptr || src1->ne[0] != entry->columns || dst->ne[0] != entry->rows ||
++    if (entry == nullptr || entry->format != rdna_format::q4 ||
++            src1->ne[0] != entry->columns || dst->ne[0] != entry->rows ||
+             ggml_nelements(add) != entry->rows || ggml_nelements(dst) != entry->rows) return false;
+     q4rdna_registry & value = registry();
+     q4rdna_launch<false, true>(
+@@ -778,14 +883,26 @@
+             !ggml_is_contiguous(activation) || !ggml_is_contiguous(dst)) return false;
+     q4rdna_device_entry * up_entry = q4rdna_find(ctx, up);
+     q4rdna_device_entry * gate_entry = q4rdna_find(ctx, gate);
+-    if (up_entry == nullptr || gate_entry == nullptr ||
++    if (up_entry == nullptr || gate_entry == nullptr || up_entry->format != rdna_format::q4 ||
+             up_entry->rows != gate_entry->rows || up_entry->columns != gate_entry->columns ||
+             activation->ne[0] != up_entry->columns || ggml_nelements(dst) != up_entry->rows) return false;
+     q4rdna_registry & value = registry();
+-    q4rdna_launch<true, false>(
+-        value.data + up_entry->relative_offset, value.data + gate_entry->relative_offset,
+-        static_cast<const float *>(activation->data), nullptr,
+-        static_cast<float *>(dst->data), up_entry->rows, up_entry->columns, ctx.stream());
++    if (gate_entry->format == rdna_format::q4) {
++        q4rdna_launch<true, false>(
++            value.data + up_entry->relative_offset, value.data + gate_entry->relative_offset,
++            static_cast<const float *>(activation->data), nullptr,
++            static_cast<float *>(dst->data), up_entry->rows, up_entry->columns, ctx.stream());
++    } else if (gate_entry->format == rdna_format::q3 &&
++            up_entry->rows == 12288 && up_entry->columns == 4096) {
++        q4rdna_gemv_split_k_gate_q3<8><<<up_entry->rows / Q4RDNA_TILE_ROWS,
++            Q4RDNA_THREADS, 0, ctx.stream()>>>(
++                value.data + up_entry->relative_offset,
++                value.data + gate_entry->relative_offset,
++                static_cast<const float *>(activation->data),
++                static_cast<float *>(dst->data), up_entry->columns);
++    } else {
++        return false;
++    }
+     q4rdna_launches.fetch_add(1, std::memory_order_relaxed);
+     q4rdna_count(*up_entry);
+     q4rdna_count(*gate_entry);

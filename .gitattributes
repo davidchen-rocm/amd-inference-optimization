@@ -1,0 +1,2 @@
+# A single-space context line is required unified-diff syntax, not trailing code whitespace.
+*.patch -whitespace

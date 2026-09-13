@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "task_id": "q4-rdna-recorded-replay",
+  "fixture": "../fixtures/q4-rdna-recorded/replay.json",
+  "objective": {
+    "metric": "decode_tokens_per_second",
+    "minimum_improvement_fraction": 0.10
+  },
+  "quality_budget": {
+    "maximum_perplexity_regression_fraction": 0.015,
+    "maximum_math_accuracy_drop_points": 0.02
+  },
+  "stability": {
+    "minimum_samples": 3,
+    "maximum_coefficient_of_variation": 0.02
+  },
+  "provenance_policy": {
+    "require_recorded_import_label": true,
+    "allow_live_mcp_claims": false
+  }
+}

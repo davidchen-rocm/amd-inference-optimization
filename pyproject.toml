@@ -1,0 +1,46 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "amd-inference-optimization"
+version = "0.1.0"
+description = "Evidence-gated AMD GPU inference optimization workflow"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "jsonschema>=4.20,<5",
+  "mcp>=1.23,<2",
+  "pydantic>=2.8,<3",
+  "PyYAML>=6,<7",
+  "typer>=0.12,<1",
+]
+
+[project.optional-dependencies]
+eval-prep = [
+  "datasets>=4,<6",
+]
+dev = [
+  "pytest>=8,<9",
+  "ruff>=0.8,<1",
+]
+
+[project.scripts]
+gpuopt = "amd_inference_opt.cli:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/amd_inference_opt"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+markers = [
+  "gpu: tests that require a live AMD GPU and ROCm runtime",
+]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]

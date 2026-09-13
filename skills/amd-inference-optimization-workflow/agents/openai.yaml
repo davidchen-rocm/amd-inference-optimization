@@ -1,0 +1,4 @@
+interface:
+  display_name: "AMD Inference Optimization"
+  short_description: "Evidence-gated AMD inference optimization workflow"
+  default_prompt: "Use $amd-inference-optimization-workflow to advance this AMD inference optimization task from evidence."
