@@ -1,0 +1,10 @@
+{
+  "model_id": "qwen3-0-6b",
+  "task": "answers",
+  "goal": "Answer questions about the fictional Juniper shop using only its supplied policies. Keep answers short and do not invent facts.",
+  "language": "en",
+  "source": "Juniper is a fictional shop used only for this test. Orders ship within two business days. Unused items may be returned within 30 days. Support email: help@juniper.example.com. Support hours are Monday to Friday, 09:00 to 17:00 UTC. There is no confirmed student discount policy.",
+  "purpose": "preview",
+  "seeds": [],
+  "target_count": 3
+}
