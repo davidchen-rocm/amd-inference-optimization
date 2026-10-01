@@ -27,6 +27,7 @@ from .outputs import SAFE_NAME, open_regular
 
 MAX_ARCHIVE_BYTES = 32 * 1024**3
 MAX_MEMBERS = 20000
+MAX_EVIDENCE_FILES = 64
 SOURCE_ROOTS = (
     "src",
     "docs/training",
@@ -293,7 +294,7 @@ def export_archive(
         if evidence_dir.is_symlink():
             raise ValueError("Evidence directories must not be symbolic links")
         selected_evidence = list(evidence_files or []) + sorted(evidence_dir.glob("*.json"))
-        if len(selected_evidence) > 32:
+        if len(selected_evidence) > MAX_EVIDENCE_FILES:
             raise ValueError("Too many runtime evidence files")
         for source in selected_evidence:
             source = Path(source)

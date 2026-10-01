@@ -1,0 +1,43 @@
+{
+  "adaptive_diagnostic": true,
+  "approval_note": "approved=true satisfies the bounded worker input contract for operator-created synthetic fixtures; it does not represent independent human review.",
+  "design_basis": "Designed after observing baseline format-conflict and support-boundary failures.",
+  "evaluation_groups": {
+    "eval-birch-1": "shipping_false_premise_and_format",
+    "eval-birch-2": "return_boundary",
+    "eval-birch-3": "support_boundary",
+    "eval-birch-4": "unknown_policy",
+    "eval-cedar-1": "shipping_false_premise_and_format",
+    "eval-cedar-2": "return_boundary",
+    "eval-cedar-3": "support_boundary",
+    "eval-cedar-4": "unknown_policy",
+    "eval-juniper-1": "shipping_false_premise_and_format",
+    "eval-juniper-2": "return_boundary",
+    "eval-juniper-3": "support_boundary",
+    "eval-juniper-4": "unknown_policy",
+    "eval-maple-1": "shipping_false_premise_and_format",
+    "eval-maple-2": "return_boundary",
+    "eval-maple-3": "support_boundary",
+    "eval-maple-4": "unknown_policy",
+    "eval-willow-1": "shipping_false_premise_and_format",
+    "eval-willow-2": "return_boundary",
+    "eval-willow-3": "support_boundary",
+    "eval-willow-4": "unknown_policy"
+  },
+  "evaluation_reused_from": "fictional-policy-json.v1",
+  "evaluation_rows": 20,
+  "evaluation_sha256": "54af2d0768a91e367b6d7876b4b50a85a0ee07dc43ba64e59e91ea7364b8424e",
+  "goal_sha256": "57ad2d9752b9f7062d4eba3288978fd7b5a063c95c2b226c3c286c37976aceff",
+  "human_review_performed": false,
+  "limits": [
+    "This reuses the exact twenty evaluation questions after inspecting baseline errors.",
+    "This is an adaptive diagnostic, not a fresh unseen test or a general accuracy estimate.",
+    "Reference facts are shared with training; no exact normalized held-out question is trained.",
+    "Labels are computed from the explicit fictional policies; no model-generated labels are used.",
+    "Five questions per group and one seed do not establish production quality."
+  ],
+  "reference_sha256": "74396b6b080446212e24c350753e859f3f083ca38be71dfa018edb33acbea136",
+  "schema": "fictional-policy-json-adaptive-robustness.v1",
+  "training_rows": 360,
+  "training_sha256": "ebf302eacd8f33a99baf62d8a1f9a59cb8e762f23c4708465b19b77c61541d75"
+}

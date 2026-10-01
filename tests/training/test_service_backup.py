@@ -204,6 +204,94 @@ def test_runtime_evidence_rejects_private_material(tmp_path):
     assert stream.getvalue() == b""
 
 
+def evidence_selection(tmp_path, data_dir, automatic_count, explicit_count):
+    evidence = data_dir / "evidence"
+    evidence.mkdir()
+    explicit = []
+    expected = {}
+    for index in range(automatic_count):
+        path = evidence / f"automatic-{index:02}.json"
+        contents = json.dumps({"measured_probe": index}).encode()
+        path.write_bytes(contents)
+        expected[path.name] = contents
+    for index in range(explicit_count):
+        path = tmp_path / f"explicit-{index:02}.json"
+        contents = json.dumps({"external_runtime_probe": index}).encode()
+        path.write_bytes(contents)
+        explicit.append(path)
+        expected[path.name] = contents
+    return explicit, expected
+
+
+@pytest.mark.parametrize("automatic_count,explicit_count", [(64, 0), (63, 1), (0, 64)])
+def test_sixty_four_combined_evidence_files_export_and_restore(
+    tmp_path, automatic_count, explicit_count
+):
+    store, submit = setup_store(tmp_path)
+    submit()
+    explicit, expected = evidence_selection(
+        tmp_path, store.root, automatic_count, explicit_count
+    )
+    assert len(expected) == 64
+    stream = io.BytesIO()
+    export_archive(store.root, stream, evidence_files=explicit)
+    archive = tmp_path / "evidence-boundary.tar.gz"
+    archive.write_bytes(stream.getvalue())
+    with tarfile.open(archive) as tar:
+        evidence_members = {
+            member.name.removeprefix("evidence/"): tar.extractfile(member).read()
+            for member in tar
+            if member.name.startswith("evidence/")
+        }
+    assert evidence_members == expected
+    restored = tmp_path / "restored-evidence-boundary"
+    restore_archive(archive, restored)
+    assert {
+        path.name: path.read_bytes() for path in (restored / "evidence").glob("*.json")
+    } == expected
+
+
+@pytest.mark.parametrize("automatic_count,explicit_count", [(65, 0), (64, 1), (63, 2), (0, 65)])
+def test_sixty_five_combined_evidence_files_refuse_export_without_partial_archive(
+    tmp_path, automatic_count, explicit_count
+):
+    store, submit = setup_store(tmp_path)
+    submit()
+    explicit, expected = evidence_selection(
+        tmp_path, store.root, automatic_count, explicit_count
+    )
+    assert len(expected) == 65
+    stream = io.BytesIO()
+    with pytest.raises(ValueError, match="Too many runtime evidence files"):
+        export_archive(store.root, stream, evidence_files=explicit)
+    assert stream.getvalue() == b""
+
+
+def test_larger_evidence_selection_still_checks_sensitive_content_in_last_file(tmp_path):
+    store, submit = setup_store(tmp_path)
+    submit()
+    explicit, _expected = evidence_selection(tmp_path, store.root, 63, 1)
+    # Explicit files are selected first; the final automatic file must still be checked.
+    (store.root / "evidence" / "automatic-62.json").write_text(
+        '{"nested":[{"gateway_secret":"synthetic credential fixture"}]}'
+    )
+    stream = io.BytesIO()
+    with pytest.raises(ValueError, match="Sensitive"):
+        export_archive(store.root, stream, evidence_files=explicit)
+    assert stream.getvalue() == b""
+
+
+def test_larger_evidence_selection_retains_one_mib_per_file_limit(tmp_path):
+    store, submit = setup_store(tmp_path)
+    submit()
+    explicit, _expected = evidence_selection(tmp_path, store.root, 63, 1)
+    explicit[0].write_bytes(b" " * (1024**2 + 1))
+    stream = io.BytesIO()
+    with pytest.raises(ValueError):
+        export_archive(store.root, stream, evidence_files=explicit)
+    assert stream.getvalue() == b""
+
+
 def test_restore_rejects_tampered_content_even_when_tar_is_valid(tmp_path):
     store, submit = setup_store(tmp_path)
     submit()

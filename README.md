@@ -91,6 +91,10 @@ configuration, human review and evaluation. The optional
 Firebase-authenticated GPU bridge, verified backups and CPU archive reads after
 the temporary GPU service stops.
 
+For a temporary GPU window, the [research guide](docs/training/research.md) links
+reproducible inference, hardware and bilingual LoRA experiments. These operator
+tools share the service's GPU lock and preserve measured evidence for backup.
+
 More: [Local setup](docs/guided-cli-and-evaluation.md) ·
 [MI300X architecture](docs/mi300x-architecture.md) ·
 [Examples](examples/) · [Third-party notices](THIRD_PARTY_NOTICES.md)

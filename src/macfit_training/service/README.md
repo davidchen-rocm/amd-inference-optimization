@@ -64,6 +64,8 @@ folders are excluded. `--evidence-file` may repeat; `data/evidence/*.json` is in
 automatically. Evidence JSON must not contain credentials or private keys. Do not
 pass credential files to the evidence arguments. Model caches are omitted; base
 model repository IDs and immutable revisions remain in each saved input/result.
+The combined automatic and explicit evidence selection permits at most 64 JSON
+files, each at most 1 MiB.
 
 The export uses SQLite's online backup API for a consistent database snapshot and
 copies only allowlisted job files. Registered completed artifacts must match their
