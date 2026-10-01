@@ -33,13 +33,24 @@ repetitions with 64 decode steps:
 | 32B | 1 | 18.05 | 64.59 |
 | 32B | 4 | 63.02 | 75.04 |
 
-At 16,384 input tokens, a further batch-one campaign used the same
+At 16,384 input tokens, further batch-one, batch-four and 32B batch-eight
+campaigns used the same
 one-warmup/three-scored/64-decode protocol:
 
-| Model | Prefill tokens/s | Decode tokens/s | Peak allocated GiB |
-| --- | ---: | ---: | ---: |
-| 14B | 12,578.03 | 20.87 | 32.31 |
-| 32B | 5,241.71 | 12.38 | 68.08 |
+| Model | Batch | Aggregate prefill tokens/s | Aggregate decode tokens/s | Peak allocated GiB |
+| --- | ---: | ---: | ---: | ---: |
+| 14B | 1 | 12,578.03 | 20.87 | 32.31 |
+| 14B | 4 | 12,613.45 | 69.25 | 46.47 |
+| 32B | 1 | 5,241.71 | 12.38 | 68.08 |
+| 32B | 4 | 5,301.84 | 39.91 | 88.98 |
+| 32B | 8 | 5,477.21 | 56.23 | 116.86 |
+
+The batch-eight admission used observed batch-one/four allocated and reserved
+memory with additional headroom. Its actual peak reserved memory was 125.39 GiB.
+For 32B, batch eight raised aggregate decode throughput relative to batch four,
+but did not raise per-sequence throughput; this is not an eight-user serving
+latency result. All three scored samples had finite checked logits and identical
+output token hashes. No batch-sixteen long-context run was attempted.
 
 These are compute measurements with synthetic repeated prompts, not a serving
 latency or answer-quality guarantee. The baseline does not identify the actual
@@ -95,6 +106,23 @@ still violates the task. Actual factual errors also occur: one output marks the
 odd total 7 as even, and adaptive 4B answers `100 - 37` with `73`. These ten
 questions are a small strict regression diagnostic, not broad arithmetic or
 general-knowledge accuracy. Task-specific gains can accompany other regressions.
+
+A later prospective transfer diagnostic fixed 30 new English/Chinese questions
+about three new fictional shops before generating either branch's outputs. The
+facts and questions were disjoint from the earlier training and evaluation
+fixtures. Both branches used the same new reference and system prompt, with
+greedy generation and strict typed scoring. The pinned 4B base matched **25/30**
+labels; the adaptive 4B adapter matched **24/30**, with four regressed and three
+improved answers.
+
+The adapter returned comma-separated strings for all three requested weekday
+arrays; the base passed two of those three array questions. Exact closing-time
+boundaries also remained problematic. This fixture was designed after observing
+earlier baseline errors, so it is a prospective transfer diagnostic, not an
+independent estimate of general accuracy. No further training or fixture tuning
+followed these outputs. Its pre-output declaration, complete labels, original
+answers and separately verified archive hashes are retained. The known-question
+adaptive gain did not establish a stable gain on these new scenarios.
 
 ## Larger-model update capacity
 
