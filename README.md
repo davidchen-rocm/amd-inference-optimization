@@ -77,6 +77,24 @@ gpuopt ui --store main=.gpuopt/store --port 4561
 
 Open the [local dashboard](http://127.0.0.1:4561) to browse tasks, models, and results.
 
+## Train a LoRA adapter
+
+The reusable MacFit training framework generates candidate examples, trains a
+LoRA adapter on reviewed data, and compares actual base and adapted answers on
+held-out questions. Generation and training can use different supported models.
+Runs use editable JSON files; completed adapters can also be merged offline on
+CPU. Training does not guarantee better answers or provide hosted inference.
+
+Follow the [training and export guide](docs/training/README.md) for installation,
+configuration, human review and evaluation. The optional
+[OpenShift deployment guide](deploy/macfit-training/README.md) covers the private
+Firebase-authenticated GPU bridge, verified backups and CPU archive reads after
+the temporary GPU service stops.
+
+For a temporary GPU window, the [research guide](docs/training/research.md) links
+reproducible inference, hardware and bilingual LoRA experiments. These operator
+tools share the service's GPU lock and preserve measured evidence for backup.
+
 More: [Local setup](docs/guided-cli-and-evaluation.md) ·
 [MI300X architecture](docs/mi300x-architecture.md) ·
 [Examples](examples/) · [Third-party notices](THIRD_PARTY_NOTICES.md)

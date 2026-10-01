@@ -1,0 +1,50 @@
+{
+  "schema": "macfit-focused-cpu-validation-v1",
+  "scope": "Focused archive, backup, finalizer and deployment-manifest CPU tests; not the complete suite or a live cluster/GPU check.",
+  "started_at": "2026-09-30T21:17:08.177113+00:00",
+  "validated_at": "2026-09-30T21:17:09.601615+00:00",
+  "platform": "Darwin",
+  "machine": "arm64",
+  "python_version": "3.12.7",
+  "command": [
+    "python",
+    "-m",
+    "pytest",
+    "-q",
+    "tests/training/test_finalizer.py",
+    "tests/training/test_cluster_runtime.py",
+    "tests/training/test_backup_pull.py",
+    "tests/training/test_service_backup.py"
+  ],
+  "environment": {
+    "PYTHONPATH": "src"
+  },
+  "exit_code": 0,
+  "counts": {
+    "passed": 54,
+    "warnings": 1
+  },
+  "duration_seconds": 1.1,
+  "wall_duration_seconds": 1.424,
+  "log_artifact": {
+    "name": "macfit-deployment-focused-20260930T211709Z.log",
+    "sha256": "832f915c37af02477796597829bbe9a557c11ef96a4a3e0fb2574025786f905c",
+    "bytes": 648,
+    "visibility": "private; retained outside the public repository"
+  },
+  "source_inventory": {
+    "name": "macfit-deployment-focused-20260930T211709Z-source.json",
+    "sha256": "47ab1e8939680188127ee99706f1c4efa5890f7f2f63603600c853c99d0260e4",
+    "file_count": 109,
+    "scope": "src/**/*.py; deploy/macfit-training/*.{py,sh,txt}; selected test files; tests/**/conftest.py; pyproject.toml",
+    "format": "UTF-8 compact sorted-key JSON object mapping repository-relative paths to file SHA-256 values, followed by LF",
+    "unchanged_during_run": true,
+    "visibility": "private; retained outside the public repository"
+  },
+  "limitations": [
+    "No GPU libraries or real model execution were tested by this command.",
+    "No live SSH, OpenShift scheduling, final retirement backup or Firebase user session was tested by this command.",
+    "The separate validation.json records an earlier 644-test Linux run against its original source bundle; it is not replaced by this focused run.",
+    "The warning concerns deprecated Starlette TestClient/httpx integration and is not a failing test."
+  ]
+}

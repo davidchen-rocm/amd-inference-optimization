@@ -1,0 +1,37 @@
+{
+  "evaluation_groups": {
+    "eval-birch-1": "shipping_false_premise_and_format",
+    "eval-birch-2": "return_boundary",
+    "eval-birch-3": "support_boundary",
+    "eval-birch-4": "unknown_policy",
+    "eval-cedar-1": "shipping_false_premise_and_format",
+    "eval-cedar-2": "return_boundary",
+    "eval-cedar-3": "support_boundary",
+    "eval-cedar-4": "unknown_policy",
+    "eval-juniper-1": "shipping_false_premise_and_format",
+    "eval-juniper-2": "return_boundary",
+    "eval-juniper-3": "support_boundary",
+    "eval-juniper-4": "unknown_policy",
+    "eval-maple-1": "shipping_false_premise_and_format",
+    "eval-maple-2": "return_boundary",
+    "eval-maple-3": "support_boundary",
+    "eval-maple-4": "unknown_policy",
+    "eval-willow-1": "shipping_false_premise_and_format",
+    "eval-willow-2": "return_boundary",
+    "eval-willow-3": "support_boundary",
+    "eval-willow-4": "unknown_policy"
+  },
+  "evaluation_rows": 20,
+  "evaluation_sha256": "54af2d0768a91e367b6d7876b4b50a85a0ee07dc43ba64e59e91ea7364b8424e",
+  "limits": [
+    "Synthetic hand-specified fixture, not a real customer or general benchmark.",
+    "Held-out prompts are distinct, but use the same reference facts as training.",
+    "Five examples per evaluation group are too few for broad quality claims.",
+    "Structured fact checks do not assess arbitrary prose or overall model safety.",
+    "One fixed seed; differences may reflect overfitting or training variance."
+  ],
+  "reference_sha256": "74396b6b080446212e24c350753e859f3f083ca38be71dfa018edb33acbea136",
+  "schema": "fictional-policy-json.v1",
+  "training_rows": 100,
+  "training_sha256": "550eba012f4cc380658fb0e087f8f57c6b915dfa6b4236317ccf8bf09276cccd"
+}

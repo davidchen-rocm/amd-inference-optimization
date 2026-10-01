@@ -1,0 +1,198 @@
+{
+  "model_id": "qwen3-0-6b",
+  "task": "answers",
+  "goal": "Answer questions about the fictional Juniper shop using only its supplied policies. Keep answers short and do not invent facts.",
+  "language": "en",
+  "source": "Juniper is a fictional shop used only for this test. Orders ship within two business days. Unused items may be returned within 30 days. Support email: help@juniper.example.com. Support hours are Monday to Friday, 09:00 to 17:00 UTC. There is no confirmed student discount policy.",
+  "preset": "quick",
+  "training": [
+    {
+      "id": "train-1",
+      "messages": [
+        {
+          "role": "user",
+          "content": "When do orders ship?"
+        },
+        {
+          "role": "assistant",
+          "content": "Orders ship within two business days."
+        }
+      ],
+      "approved": true
+    },
+    {
+      "id": "train-2",
+      "messages": [
+        {
+          "role": "user",
+          "content": "What is the return window?"
+        },
+        {
+          "role": "assistant",
+          "content": "Unused items may be returned within 30 days."
+        }
+      ],
+      "approved": true
+    },
+    {
+      "id": "train-3",
+      "messages": [
+        {
+          "role": "user",
+          "content": "What is the support email?"
+        },
+        {
+          "role": "assistant",
+          "content": "Contact help@juniper.example.com."
+        }
+      ],
+      "approved": true
+    },
+    {
+      "id": "train-4",
+      "messages": [
+        {
+          "role": "user",
+          "content": "What are your support hours?"
+        },
+        {
+          "role": "assistant",
+          "content": "Support is available Monday to Friday, 09:00 to 17:00 UTC."
+        }
+      ],
+      "approved": true
+    },
+    {
+      "id": "train-5",
+      "messages": [
+        {
+          "role": "user",
+          "content": "Can I return an unused product?"
+        },
+        {
+          "role": "assistant",
+          "content": "Yes. Unused items may be returned within 30 days."
+        }
+      ],
+      "approved": true
+    },
+    {
+      "id": "train-6",
+      "messages": [
+        {
+          "role": "user",
+          "content": "Do you have a student discount?"
+        },
+        {
+          "role": "assistant",
+          "content": "There is no confirmed student discount policy. Please contact help@juniper.example.com."
+        }
+      ],
+      "approved": true
+    },
+    {
+      "id": "train-7",
+      "messages": [
+        {
+          "role": "user",
+          "content": "Will my order ship immediately?"
+        },
+        {
+          "role": "assistant",
+          "content": "The stated shipping time is within two business days."
+        }
+      ],
+      "approved": true
+    },
+    {
+      "id": "train-8",
+      "messages": [
+        {
+          "role": "user",
+          "content": "How do I contact customer support?"
+        },
+        {
+          "role": "assistant",
+          "content": "Email help@juniper.example.com."
+        }
+      ],
+      "approved": true
+    },
+    {
+      "id": "train-9",
+      "messages": [
+        {
+          "role": "user",
+          "content": "Can I return something after 60 days?"
+        },
+        {
+          "role": "assistant",
+          "content": "The stated return window for unused items is 30 days. Contact help@juniper.example.com for help."
+        }
+      ],
+      "approved": true
+    },
+    {
+      "id": "train-10",
+      "messages": [
+        {
+          "role": "user",
+          "content": "Is support available on Saturday?"
+        },
+        {
+          "role": "assistant",
+          "content": "The stated support hours are Monday to Friday, 09:00 to 17:00 UTC."
+        }
+      ],
+      "approved": true
+    },
+    {
+      "id": "train-11",
+      "messages": [
+        {
+          "role": "user",
+          "content": "What timezone are your support hours in?"
+        },
+        {
+          "role": "assistant",
+          "content": "Support hours are stated in UTC."
+        }
+      ],
+      "approved": true
+    },
+    {
+      "id": "train-12",
+      "messages": [
+        {
+          "role": "user",
+          "content": "Which shop are these policies for?"
+        },
+        {
+          "role": "assistant",
+          "content": "These are the fictional Juniper shop policies."
+        }
+      ],
+      "approved": true
+    }
+  ],
+  "evaluation": [
+    {
+      "id": "test-1",
+      "question": "It has been one business day since ordering. Has the stated shipping window passed?",
+      "expected": "No. Orders ship within two business days.",
+      "approved": true
+    },
+    {
+      "id": "test-2",
+      "question": "I have an unused item purchased 20 days ago. Is it within the stated return window?",
+      "expected": "Yes. Unused items may be returned within 30 days.",
+      "approved": true
+    },
+    {
+      "id": "test-3",
+      "question": "Where should I ask about an unconfirmed discount?",
+      "expected": "Contact help@juniper.example.com.",
+      "approved": true
+    }
+  ]
+}

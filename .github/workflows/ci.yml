@@ -33,8 +33,10 @@ jobs:
           git checkout-index --all --prefix="$scan_dir/"
           "$tool_dir/gitleaks" dir --redact=100 --no-banner "$scan_dir"
       - name: Install development dependencies
-        run: python -m pip install -e '.[dev]'
+        run: python -m pip install -e '.[dev,training-service]'
       - name: Lint
-        run: ruff check src tests tools
+        run: ruff check src tests tools deploy/macfit-training
       - name: Test without a GPU
         run: pytest -q -m 'not gpu'
+      - name: Test the MacFit frontend
+        run: node --test web/macfit/tests/*.test.mjs

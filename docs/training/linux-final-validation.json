@@ -1,0 +1,65 @@
+{
+  "schema": "macfit-linux-cpu-validation-v2",
+  "scope": "Complete Python pytest suite excluding the gpu marker, executed from an isolated current public-source export; no active service files modified.",
+  "started_at": "2026-09-30T21:19:56.937916+00:00",
+  "validated_at": "2026-09-30T21:20:39.166838+00:00",
+  "platform": "Linux",
+  "machine": "x86_64",
+  "python_version": "3.12.3",
+  "command": [
+    "python",
+    "-m",
+    "pytest",
+    "-m",
+    "not gpu",
+    "-q"
+  ],
+  "environment": {
+    "PYTHONPATH": "<isolated-export>/src",
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "CUDA_VISIBLE_DEVICES": "",
+    "HIP_VISIBLE_DEVICES": "",
+    "ROCR_VISIBLE_DEVICES": "",
+    "TZ": "UTC"
+  },
+  "exit_code": 0,
+  "counts": {
+    "passed": 650,
+    "warnings": 1
+  },
+  "duration_seconds": 41.81,
+  "log_artifact": {
+    "name": "linux-final-gate-20260930T211910Z-77543ea7/pytest.log",
+    "sha256": "31e6ba860a0240074f5c2df043c2cfa760cc448bf0132136b5bd34bdb4678819",
+    "bytes": 1337,
+    "visibility": "private; retained outside the public repository"
+  },
+  "source_bundle": {
+    "name": "linux-final-gate-20260930T211910Z-77543ea7/source.tgz",
+    "sha256": "ad06ce7756729367e0497383f59639a30e178c1a6ebf44845eff71a0bd44b5ef",
+    "bytes": 1058063,
+    "files": 310,
+    "visibility": "private; retained outside the public repository"
+  },
+  "source_manifest": {
+    "name": "linux-final-gate-20260930T211910Z-77543ea7/source-manifest.json",
+    "sha256": "179bc1c410f67f644c36aefda3e29ddffafc2f975cee867a1ea66263a5914b5a",
+    "format": "UTF-8 compact sorted-key JSON array of repository-relative path, sha256 and size_bytes records, followed by LF",
+    "visibility": "private; retained outside the public repository"
+  },
+  "source_unchanged_after_tests": true,
+  "exported_local_source_unchanged_at_result_capture": true,
+  "previous_validation": {
+    "path": "docs/training/validation.json",
+    "sha256": "f85e77613201967444243653a9b4d977216e93fbcf283d4c7f7056e7532c0960",
+    "passed": 644,
+    "preserved_unchanged": true
+  },
+  "limitations": [
+    "The gpu marker is excluded and GPU visibility was disabled; no real model execution or model-quality measurement is established by this gate.",
+    "The tests ran in a unique temporary directory using the existing Python environment, without replacing or restarting the active service.",
+    "No live cluster rollout, final retirement backup, or interactive Firebase/Google sign-in was exercised by this command.",
+    "One warning concerns deprecated Starlette TestClient/httpx integration; it did not fail a test.",
+    "The evidence record and documentation reference are written after the tested source export; the preserved bundle identifies exactly the bytes tested."
+  ]
+}
